@@ -3,13 +3,13 @@ import numpy as np
 from PIL import Image, ImageTk
 import tkinter as tk
 from tkinter import ttk
-from tkinter import filedialog
 
 # =============================================================================
 # CONFIG
 # =============================================================================
 
-WINDOW_TITLE = "EASYRAW - A raw developer with soul"
+RAW_PATH = "DSCF5184.RAF"
+WINDOW_TITLE = "EASYRAW"
 
 # =============================================================================
 # WHITE BALANCE PRESETS
@@ -40,28 +40,6 @@ def load_raw(path):
 
     rgb = rgb.astype(np.float32) / 65535.0
     return rgb
-
-#Afegim codi per carregar fitxers raw.
-def load_new_raw():
-    global original
-
-    path = filedialog.askopenfilename(
-        title="Select RAW file",
-        filetypes=[
-            ("RAW files", "*.RAF *.DNG *.NEF *.CR2 *.ARW"),
-            ("All files", "*.*")
-        ]
-    )
-
-    if not path:
-        return
-
-    print(f"Loading {path}...")
-
-    original = load_raw(path)
-    original = original[::2, ::2]
-
-    refresh()
 
 # =============================================================================
 # UTILS
@@ -183,21 +161,7 @@ tk.Label(
     text="EASYRAW",
     fg="white",
     bg="#111111",
-    font=("Monospace", 12)
-).pack(pady=10)
-
-# =============================================================================
-# BUTTON TO LOAD RAW FILES
-# =============================================================================
-
-tk.Button(
-    control_frame,
-    text="LOAD RAW",
-    command=load_new_raw,
-    fg="white",
-    bg="#333333",
-    activebackground="#555555",
-    relief="flat"
+    font=("Courier", 14)
 ).pack(pady=10)
 
 # =============================================================================
@@ -269,3 +233,4 @@ ttk.OptionMenu(
 
 refresh()
 root.mainloop()
+
