@@ -30,16 +30,45 @@ WB_PRESETS = {
 
 def load_raw(path):
 
-      global raw_info
+    global raw_info  # <-- indentació corregida (estava desplaçada)
 
     with rawpy.imread(path) as raw:
 
+        # --- Informació de la càmera ---
+        # raw.camera_whitebalance -> llista [R, G, B, G2] del balanç de blancs de la càmera
+        # raw.iso_speed           -> ISO numèric (ex: 400)
+        # raw.shutter             -> velocitat d'obturador en segons (ex: 0.002 = 1/500)
+        # raw.aperture            -> obertura (ex: 2.8)
+        # raw.focal_len           -> focal en mm (ex: 35.0)
+
+        def fmt_shutter(s):
+            """Converteix segons a fracció llegible: 0.002 -> '1/500s'"""
+            if s is None or s == 0:
+                return "—"
+            if s >= 1:
+                return f"{s:.1f}s"
+            return f"1/{round(1/s)}s"
+
+        def fmt_aperture(a):
+            if a is None or a == 0:
+                return "—"
+            return f"f/{a:.1f}"
+
+        def fmt_focal(f):
+            if f is None or f == 0:
+                return "—"
+            return f"{f:.0f}mm"
+
+        def fmt_iso(i):
+            if i is None or i == 0:
+                return "—"
+            return f"ISO {int(i)}"
+
         raw_info = {
-            "Vendor": raw.camera_whitebalance,
-            "Model": raw.camera_white_level_per_channel,
-            "WB": raw.camera_whitebalance,
-            "ISO": raw.iso_speed,
-            "Shutter": raw.shutter
+            "ISO":      fmt_iso(raw.iso_speed),
+            "Obturador": fmt_shutter(raw.shutter),
+            "Obertura": fmt_aperture(raw.aperture),
+            "Focal":    fmt_focal(raw.focal_len),
         }
 
         rgb = raw.postprocess(
@@ -132,7 +161,7 @@ def refresh():
 # LOAD
 # =============================================================================
 
-raw_info = {} #agafa les dades exif del raw
+raw_info = {}
 print("Welcome to EasyRaw. The RAW developer with a soul")
 print("Loading RAW...")
 
@@ -239,6 +268,56 @@ ttk.OptionMenu(
     *WB_PRESETS.keys(),
     command=lambda _: refresh()
 ).pack(pady=5)
+
+# =============================================================================
+# EXIF PANEL (a baix de tot dels controls)
+# =============================================================================
+
+# Separador visual
+tk.Frame(
+    control_frame,
+    bg="#333333",
+    height=1
+).pack(fill="x", padx=5, pady=15)
+
+tk.Label(
+    control_frame,
+    text="EXIF",
+    fg="#888888",
+    bg="#111111",
+    font=("Monospace", 9)
+).pack()
+
+# Mostra cada camp EXIF com una fila etiqueta + valor
+EXIF_LABELS = {
+    "ISO":       "ISO",
+    "Obturador": "Shutter",
+    "Obertura":  "Aperture",
+    "Focal":     "Focal",
+}
+
+for key, label in EXIF_LABELS.items():
+    row = tk.Frame(control_frame, bg="#111111")
+    row.pack(fill="x", padx=8, pady=1)
+
+    tk.Label(
+        row,
+        text=label,
+        fg="#666666",
+        bg="#111111",
+        font=("Monospace", 9),
+        width=9,
+        anchor="w"
+    ).pack(side="left")
+
+    tk.Label(
+        row,
+        text=raw_info.get(key, "—"),
+        fg="#cccccc",
+        bg="#111111",
+        font=("Monospace", 9),
+        anchor="w"
+    ).pack(side="left")
 
 # =============================================================================
 # START
