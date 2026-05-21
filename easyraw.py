@@ -30,7 +30,18 @@ WB_PRESETS = {
 
 def load_raw(path):
 
+      global raw_info
+
     with rawpy.imread(path) as raw:
+
+        raw_info = {
+            "Vendor": raw.camera_whitebalance,
+            "Model": raw.camera_white_level_per_channel,
+            "WB": raw.camera_whitebalance,
+            "ISO": raw.iso_speed,
+            "Shutter": raw.shutter
+        }
+
         rgb = raw.postprocess(
             use_camera_wb=False,
             no_auto_bright=False,
@@ -121,6 +132,8 @@ def refresh():
 # LOAD
 # =============================================================================
 
+raw_info = {} #agafa les dades exif del raw
+print("Welcome to EasyRaw. The RAW developer with a soul")
 print("Loading RAW...")
 
 original = load_raw(RAW_PATH)
