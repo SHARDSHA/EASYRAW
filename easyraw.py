@@ -1,4 +1,3 @@
-import rawpy
 import numpy as np
 from PIL import Image, ImageTk
 import tkinter as tk
@@ -9,7 +8,7 @@ from tkinter import ttk
 # =============================================================================
 
 RAW_PATH = "DSCF5184.RAF"
-WINDOW_TITLE = "EASYRAW Prealpha"
+WINDOW_TITLE = "EASYRAW Pre-lpha"
 
 # =============================================================================
 # WHITE BALANCE PRESETS
@@ -30,47 +29,73 @@ WB_PRESETS = {
 
 def load_raw(path):
 
-    global raw_info  # <-- indentació corregida (estava desplaçada)
+    global raw_info
 
+    # --- Lectura EXIF amb Pillow ---
+    # Els tags EXIF estan identificats per números estàndard:
+    # 33434 = ExposureTime, 33437 = FNumber, 34855 = ISOSpeedRatings, 37386 = FocalLength
+
+    EXIF_TAGS = {
+        33434: "ExposureTime",
+        33437: "FNumber",
+        34855: "ISO",
+        37386: "FocalLength",
+    }
+
+    def read_exif_pillow(path):
+        try:
+            img = Image.open(path)
+            exif_raw = img._getexif()
+            if not exif_raw:
+                return {}
+            return {EXIF_TAGS[k]: v for k, v in exif_raw.items() if k in EXIF_TAGS}
+        except Exception:
+            return {}
+
+    def fmt_rational(v):
+        """Pillow retorna valors racionals com a tuples (numerador, denominador)."""
+        if isinstance(v, tuple):
+            return v[0] / v[1] if v[1] != 0 else 0
+        return float(v)
+
+    def fmt_shutter(v):
+        if v is None:
+            return "—"
+        s = fmt_rational(v)
+        if s == 0:
+            return "—"
+        if s >= 1:
+            return f"{s:.1f}s"
+        return f"1/{round(1/s)}s"
+
+    def fmt_aperture(v):
+        if v is None:
+            return "—"
+        a = fmt_rational(v)
+        return f"f/{a:.1f}" if a else "—"
+
+    def fmt_focal(v):
+        if v is None:
+            return "—"
+        f = fmt_rational(v)
+        return f"{f:.0f}mm" if f else "—"
+
+    def fmt_iso(v):
+        if v is None:
+            return "—"
+        return f"ISO {int(v)}"
+
+    tags = read_exif_pillow(path)
+
+    raw_info = {
+        "ISO":       fmt_iso(tags.get("ISO")),
+        "Obturador": fmt_shutter(tags.get("ExposureTime")),
+        "Obertura":  fmt_aperture(tags.get("FNumber")),
+        "Focal":     fmt_focal(tags.get("FocalLength")),
+    }
+
+    # --- Lectura del RAW amb rawpy ---
     with rawpy.imread(path) as raw:
-
-        # --- Informació de la càmera ---
-        # raw.camera_whitebalance -> llista [R, G, B, G2] del balanç de blancs de la càmera
-        # raw.iso_speed           -> ISO numèric (ex: 400)
-        # raw.shutter             -> velocitat d'obturador en segons (ex: 0.002 = 1/500)
-        # raw.aperture            -> obertura (ex: 2.8)
-        # raw.focal_len           -> focal en mm (ex: 35.0)
-
-        def fmt_shutter(s):
-            """Converteix segons a fracció llegible: 0.002 -> '1/500s'"""
-            if s is None or s == 0:
-                return "—"
-            if s >= 1:
-                return f"{s:.1f}s"
-            return f"1/{round(1/s)}s"
-
-        def fmt_aperture(a):
-            if a is None or a == 0:
-                return "—"
-            return f"f/{a:.1f}"
-
-        def fmt_focal(f):
-            if f is None or f == 0:
-                return "—"
-            return f"{f:.0f}mm"
-
-        def fmt_iso(i):
-            if i is None or i == 0:
-                return "—"
-            return f"ISO {int(i)}"
-
-        raw_info = {
-            "ISO":      fmt_iso(raw.iso_speed),
-            "Obturador": fmt_shutter(raw.shutter),
-            "Obertura": fmt_aperture(raw.aperture),
-            "Focal":    fmt_focal(raw.focal_len),
-        }
-
         rgb = raw.postprocess(
             use_camera_wb=False,
             no_auto_bright=False,
@@ -325,4 +350,3 @@ for key, label in EXIF_LABELS.items():
 
 refresh()
 root.mainloop()
-
