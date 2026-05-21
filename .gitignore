@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+
+venv/
+.env/
+
+*.RAF
+*.NEF
+*.CR2
+*.ARW
+*.DNG
+
+exports/
